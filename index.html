@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+</head>
+<body>
+    <h1>Chatbot</h1>
+    <div id="chatbox">
+        <p class="botText"><span>Hi! I'm a chatbot. How can I assist you?</span></p>
+    </div>
+    <input id="textInput" type="text" name="msg" placeholder="Type your message here...">
+    <input id="buttonInput" type="submit" value="Send">
+    <script>
+        function getBotResponse() {
+            var rawText = $("#textInput").val();
+            var userHtml = '<p class="userText"><span>' + rawText + '</span></p>';
+            $("#textInput").val("");
+            $("#chatbox").append(userHtml);
+            document.getElementById('chatbox').scrollTop = document.getElementById('chatbox').scrollHeight;
+            $.get("/get", { msg: rawText }).done(function(data) {
+                var botHtml = '<p class="botText"><span>' + data + '</span></p>';
+                $("#chatbox").append(botHtml);
+                document.getElementById('chatbox').scrollTop = document.getElementById('chatbox').scrollHeight;
+            });
+        }
+        $("#textInput").keypress(function(e) {
+            if(e.which == 13) {
+                getBotResponse();
+            }
+        });
+        $("#buttonInput").click(function() {
+            getBotResponse();
+        });
+    </script>
+</body>
+</html>
