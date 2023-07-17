@@ -1,0 +1,50 @@
+# Use UBI8 as the base image
+FROM registry.access.redhat.com/ubi8/ubi:latest
+
+# Install necessary dependencies
+RUN yum -y install dnf-plugins-core
+RUN dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+RUN dnf config-manager --set-enabled powertools
+RUN dnf -y update && dnf -y install wget
+
+# Install CUDA toolkit
+ARG CUDA_VERSION=11.4
+ARG CUDA_PKG_VERSION=11-4.x86_64
+
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-repo-rhel8-${CUDA_PKG_VERSION}.rpm
+RUN rpm -i cuda-repo-rhel8-${CUDA_PKG_VERSION}.rpm
+RUN dnf -y install cuda-${CUDA_VERSION}
+
+# Add CUDA to the PATH environment variable
+ENV PATH=/usr/local/cuda-${CUDA_VERSION}/bin:$PATH
+ENV LD_LIBRARY_PATH=/usr/local/cuda-${CUDA_VERSION}/lib64:$LD_LIBRARY_PATH
+
+# Install necessary dependencies for XGBoost
+RUN dnf -y install gcc-c++ make git
+
+# Clone XGBoost repository
+RUN git clone --recursive https://github.com/dmlc/xgboost
+
+# Build XGBoost with CUDA support
+WORKDIR /xgboost
+RUN mkdir build
+WORKDIR /xgboost/build
+RUN cmake .. -DUSE_CUDA=ON -DR_LIB=OFF
+RUN make -j$(nproc)
+
+# Install XGBoost Python package
+WORKDIR /xgboost/python-package
+RUN python setup.py install
+
+# Set up the working directory
+WORKDIR /app
+
+# Copy your application files into the container
+COPY . /app
+
+# Build and run your application
+# ...
+
+# Example: Install additional dependencies and run a script
+# RUN dnf -y install some-dependencies
+# CMD [ "python", "your-script.py" ]
